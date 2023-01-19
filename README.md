@@ -6,7 +6,7 @@
   
 ## Usage
 
-It's pretty straight forward, select a process from the main menu, create your classes (and members within), give them their correct signatures and finally dump them into an header file.
+It's pretty straight forward, select a process from the main menu, create your classes, give them their correct signatures and finally dump them into an header file.
 
 Please read the explanation carefully before using the Global Offset Dumper.
 
