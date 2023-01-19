@@ -26,3 +26,16 @@ Please read the explanation carefully before using the Global Offset Dumper.
 3. Type name and type size, after you enter a type name, it will fill in the type size automatically with the guessed size (only on primitive datatypes, for other ones just enter it yourself), it it's incorrect, feel free to correct it. The dumper directly puts **this type name** into the header file (for diversity), so enter a correct one.
 4. Offset name.
 5. Signature the dumper will search on the selected module.
+
+#### Config System
+
+1. Easily save your config for future uses or sharing purposes.
+2. Load an already made config for saving time.
+
+#### Dumped Header File
+
+After all your configuration is done and you have dumped it, you are ready to go.
+
+<img src="p2_gh.png"></img>
+
+<hr>
