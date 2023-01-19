@@ -365,6 +365,7 @@ namespace GlobalOffsetDumper
 				Buffer.append(klass.ClassName);
 				Buffer.append("\n{\n");
 
+				size_t PadIdx = 0;
 				for (size_t OffsetIdx = 0; OffsetIdx < klass.Offsets.size(); OffsetIdx++)
 				{
 					const auto& offset = klass.Offsets.at(OffsetIdx);
@@ -374,16 +375,17 @@ namespace GlobalOffsetDumper
 					if (OffsetIdx == 0)
 					{
 						Offset = offset.Offset;
-
-						Buffer += "char pad" + std::to_string(OffsetIdx) + "[" + std::to_string(Offset) + "];\n";
 					}
 					else
 					{
 						const auto& prevOffset = klass.Offsets.at(OffsetIdx - 1);
 						Offset = offset.Offset - (prevOffset.Offset + atoi(prevOffset.OffsetSize));
+					}
 
-						if (Offset)
-							Buffer += "char pad" + std::to_string(OffsetIdx) + "[" + std::to_string(Offset) + "];\n";;
+					if (Offset)
+					{
+						Buffer += "char pad" + std::to_string(PadIdx) + "[" + std::to_string(Offset) + "];\n";
+						PadIdx++;
 					}
 
 					Buffer.append(offset.OffsetType);
