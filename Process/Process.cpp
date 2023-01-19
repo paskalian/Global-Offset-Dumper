@@ -37,7 +37,7 @@ namespace GlobalOffsetDumper
 			wcstombs_s(&ReturnBytes, ProcessNameBuffer, MAX_PATH, szExeFile, wcslen(procEntry.szExeFile));
 #endif
 
-			if (wcsstr(procEntry.szExeFile, L".exe") && strstr(ProcessNameBuffer, g_SelectProcessFilter))
+			if (wcsstr(procEntry.szExeFile, L".exe") && stristr(ProcessNameBuffer, g_SelectProcessFilter))
 			{
 				ProcessInfo ProcInfo{};
 
