@@ -349,6 +349,7 @@ namespace GlobalOffsetDumper
 			// BEST HEADER SYSTEM EVER
 			DWORD BytesWritten = 0;
 
+			
 			for (int idx = 0; idx < g_Classes.size(); idx++)
 			{
 				auto& klass = g_Classes.at(idx);

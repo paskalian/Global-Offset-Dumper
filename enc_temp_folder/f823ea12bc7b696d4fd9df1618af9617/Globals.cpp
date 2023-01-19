@@ -349,17 +349,12 @@ namespace GlobalOffsetDumper
 			// BEST HEADER SYSTEM EVER
 			DWORD BytesWritten = 0;
 
-			for (int idx = 0; idx < g_Classes.size(); idx++)
+			std::string Buffer = "// Created by Global Offset Dumper\n// https://github.com/paskalian/Global-Offset-Dumper\n\n\n";
+			for (auto& klass : g_Classes)
 			{
-				auto& klass = g_Classes.at(idx);
-
 				std::sort(klass.Offsets.begin(), klass.Offsets.end(), [](const DumpOffsetInfo& off1, const DumpOffsetInfo& off2) -> bool {
 					return off1.Offset < off2.Offset;
 					});
-
-				std::string Buffer;
-				if (idx == 0)
-					Buffer.append("// Created by Global Offset Dumper\n// https://github.com/paskalian/Global-Offset-Dumper\n\n\n");
 
 				Buffer.append("struct ");
 				Buffer.append(klass.ClassName);
