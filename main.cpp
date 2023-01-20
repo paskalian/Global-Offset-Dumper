@@ -37,8 +37,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance,_In_opt_ HINSTANCE hPrevInstance,_I
     HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Global Offset Dumper", WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
     g_pMainWnd = &hwnd;
 
-    GlobalOffsetDumper::g_Mutex = CreateMutexW(0, FALSE, NULL);
-
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
     {

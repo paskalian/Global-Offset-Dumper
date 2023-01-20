@@ -16,8 +16,6 @@ char* stristr(const char* str1, const char* str2);
 
 namespace GlobalOffsetDumper
 {
-	extern HANDLE g_Mutex;
-
 	enum class BYTESIZE
 	{
 		BYTE,
@@ -27,12 +25,13 @@ namespace GlobalOffsetDumper
 
 	struct DumpOffsetInfo
 	{
-		CHAR OffsetName[MAX_PATH]{};
+		UINT SelectedModule = 0;
+		BYTESIZE SelectedSize = BYTESIZE::BYTE;
 		CHAR OffsetType[MAX_PATH]{};
 		CHAR OffsetSize[MAX_PATH]{};
+		CHAR OffsetName[MAX_PATH]{};
 		CHAR Signature[MAX_PATH]{};
-		BYTESIZE SelectedSize = BYTESIZE::BYTE;
-		int SelectedModule = 0;
+		
 		uintptr_t Offset = 0;
 	};
 
@@ -43,7 +42,7 @@ namespace GlobalOffsetDumper
 	};
 
 	extern bool g_MmSelectProcess;
-	
+
 	extern bool g_MmAbout;
 	extern bool g_MmExit;
 	extern bool g_MmDestroy;

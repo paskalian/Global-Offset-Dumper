@@ -46,8 +46,6 @@ char* stristr(const char* str1, const char* str2)
 
 namespace GlobalOffsetDumper
 {
-	HANDLE g_Mutex = NULL;
-
 	bool g_MmSelectProcess = false;
 
 	bool g_MmAbout = false;
@@ -58,10 +56,10 @@ namespace GlobalOffsetDumper
 	CHAR g_InputClassNameBuffer[MAX_PATH]{};
 	std::vector<DumpClassInfo> g_Classes;
 
-	size_t GetSizeOfType(const DumpOffsetInfo* DumpOff)
+	size_t GetSizeOfType(const DumpOffsetInfo* pDumpOffset)
 	{
-		SIZE_T Size = 0;
-		const char* TypeC = DumpOff->OffsetType;
+		size_t Size = 0;
+		const char* TypeC = pDumpOffset->OffsetType;
 
 		if (stristr(TypeC, "*"))
 		{
@@ -96,7 +94,7 @@ namespace GlobalOffsetDumper
 		}
 
 
-		if (char* arbeg = stristr(DumpOff->OffsetName, "["))
+		if (char* arbeg = stristr(pDumpOffset->OffsetName, "["))
 		{
 			arbeg++;
 
@@ -161,14 +159,12 @@ namespace GlobalOffsetDumper
 
 			CloseAllMenus();		// To prevent crashes
 			ClearAllProcesses();	// To load the config freshly
-
 			g_Classes.clear();		// To prevent configs loading on top of each other
 
 			PCHAR OffsetStart = nullptr;
 			BYTE ItemNumber = 0;
 
 			DumpClassInfo DumpClass;
-
 			DumpOffsetInfo DumpOffset;
 			for (PCHAR Idx = FileBuffer; Idx < FileBuffer + FileSize; Idx++)
 			{
@@ -191,9 +187,15 @@ namespace GlobalOffsetDumper
 					case '#':
 					{
 						if (!OffsetStart)
-							assert(FALSE);
+						{
+							MessageBoxA(*g_pMainWnd, "The config file is broken", "Global Offset Dumper", MB_OK);
+							delete[] FileBuffer;
+							CloseHandle(FileHandle);
+							return false;
+						}
 
 						SIZE_T Limit = Idx - OffsetStart;
+
 						std::string Item = (char*)OffsetStart;
 						Item.resize(Limit);
 
@@ -284,7 +286,7 @@ namespace GlobalOffsetDumper
 			if (FileHandle == INVALID_HANDLE_VALUE)
 				return false;
 
-			// BEST CONFIG SYSTEM EVER
+			// BEST CONFIG SYSTEM EVER, MAY CHANGE IT TO JSON LATER ON
 			DWORD BytesWritten = 0;
 			for (auto& klass : g_Classes)
 			{
@@ -308,7 +310,7 @@ namespace GlobalOffsetDumper
 					Buffer.append("# ");
 				}
 				Buffer.append("\n");
-				WriteFile(FileHandle, Buffer.c_str(), (DWORD)Buffer.size(), &BytesWritten, NULL);
+				assert(WriteFile(FileHandle, Buffer.c_str(), (DWORD)Buffer.size(), &BytesWritten, NULL));
 			}
 
 			CloseHandle(FileHandle);
@@ -348,18 +350,33 @@ namespace GlobalOffsetDumper
 
 			// BEST HEADER SYSTEM EVER
 			DWORD BytesWritten = 0;
-
 			for (int idx = 0; idx < g_Classes.size(); idx++)
 			{
 				auto& klass = g_Classes.at(idx);
 
 				std::sort(klass.Offsets.begin(), klass.Offsets.end(), [](const DumpOffsetInfo& off1, const DumpOffsetInfo& off2) -> bool {
 					return off1.Offset < off2.Offset;
-					});
+				});
 
 				std::string Buffer;
 				if (idx == 0)
 					Buffer.append("// Created by Global Offset Dumper\n// https://github.com/paskalian/Global-Offset-Dumper\n\n\n");
+
+				for (size_t OffsetIdx = 0; OffsetIdx < klass.Offsets.size(); OffsetIdx++)
+				{
+					const auto& offset = klass.Offsets.at(OffsetIdx);
+
+					if (offset.Offset == 0)
+					{
+						if (OffsetIdx == klass.Offsets.size() - 1)
+						{
+							MessageBoxA(*g_pMainWnd, "No offset is found", "Global Offset Dumper", MB_OK);
+							CloseHandle(FileHandle);
+							return false;
+						}
+						continue;
+					}
+				}
 
 				Buffer.append("struct ");
 				Buffer.append(klass.ClassName);
@@ -370,16 +387,15 @@ namespace GlobalOffsetDumper
 				{
 					const auto& offset = klass.Offsets.at(OffsetIdx);
 
-					uintptr_t Offset = 0;
+					if (!offset.Offset)
+						continue;
 
-					if (OffsetIdx == 0)
-					{
-						Offset = offset.Offset;
-					}
-					else
+					uintptr_t Offset = offset.Offset;
+					if (OffsetIdx != 0)
 					{
 						const auto& prevOffset = klass.Offsets.at(OffsetIdx - 1);
-						Offset = offset.Offset - (prevOffset.Offset + atoi(prevOffset.OffsetSize));
+						if (prevOffset.Offset)
+							Offset -= (prevOffset.Offset + atoi(prevOffset.OffsetSize));
 					}
 
 					if (Offset)
@@ -395,7 +411,7 @@ namespace GlobalOffsetDumper
 				}
 
 				Buffer.append("};\n\n");
-				WriteFile(FileHandle, Buffer.c_str(), (DWORD)Buffer.size(), &BytesWritten, NULL);
+				assert(WriteFile(FileHandle, Buffer.c_str(), (DWORD)Buffer.size(), &BytesWritten, NULL));
 			}
 
 			CloseHandle(FileHandle);

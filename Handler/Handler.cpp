@@ -34,7 +34,7 @@ namespace GlobalOffsetDumper
 				return StartAddress + i1 + PatternLen;
 		}
 
-		return NULL;
+		return nullptr;
 	}
 
 	PVOID SigScanEx(HANDLE ProcessHandle, PCHAR StartAddress, SIZE_T Size, std::vector<BYTE> Pattern)
@@ -49,16 +49,11 @@ namespace GlobalOffsetDumper
 
 		while (Size)
 		{
-			if (!ReadProcessMemory(ProcessHandle, StartAddress + TotalReadBytes, &Data, PAGE_SIZE, &ReadBytes))
-			{
-				assert(FALSE);
-			}
+			assert(ReadProcessMemory(ProcessHandle, StartAddress + TotalReadBytes, &Data, PAGE_SIZE, &ReadBytes));
+
 			Size = Size >= ReadBytes ? Size - ReadBytes : 0;
 
-			if (ReadBytes != PAGE_SIZE)
-			{
-				assert(FALSE);
-			}
+			assert(ReadBytes == PAGE_SIZE);
 
 			bool Found = TRUE;
 			for (unsigned int i1 = 0; i1 < PAGE_SIZE; i1++)
@@ -80,7 +75,7 @@ namespace GlobalOffsetDumper
 			TotalReadBytes += ReadBytes;
 		}
 
-		return NULL;
+		return nullptr;
 	}
 
 	VOID DumpOffsets()
@@ -118,7 +113,6 @@ namespace GlobalOffsetDumper
 				}*/
 				}
 				
-
 				ZeroMemory((PVOID)&offset.Offset, sizeof(offset.Offset));
 				ReadProcessMemory(g_SelectedProcess.ProcHandle, Address, (LPVOID)&offset.Offset, ReadSize, nullptr);
 			}
