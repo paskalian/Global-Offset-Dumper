@@ -19,35 +19,37 @@ namespace GlobalOffsetDumper
 	{
 		ClearAllProcesses();
 
-		PROCESSENTRY32 procEntry;
-		procEntry.dwSize = sizeof(PROCESSENTRY32);
+		PROCESSENTRY32 ProcEntry;
+		ZeroMemory(&ProcEntry, sizeof(PROCESSENTRY32));
+
+		ProcEntry.dwSize = sizeof(PROCESSENTRY32);
 
 		HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-		if (hSnapshot == INVALID_HANDLE_VALUE)
+		if (!IsHandleValid(hSnapshot))
 			return;
 
-		Process32First(hSnapshot, &procEntry);
+		Process32First(hSnapshot, &ProcEntry);
 		do
 		{
 			char ProcessNameBuffer[MAX_PATH]{};
 			size_t ReturnBytes = 0;
 #ifdef _WIN64
-			wcstombs_s(&ReturnBytes, ProcessNameBuffer, procEntry.szExeFile, wcslen(procEntry.szExeFile));
+			wcstombs_s(&ReturnBytes, ProcessNameBuffer, ProcEntry.szExeFile, wcslen(ProcEntry.szExeFile));
 #else
-			wcstombs_s(&ReturnBytes, ProcessNameBuffer, MAX_PATH, szExeFile, wcslen(procEntry.szExeFile));
+			wcstombs_s(&ReturnBytes, ProcessNameBuffer, MAX_PATH, szExeFile, wcslen(ProcEntry.szExeFile));
 #endif
 
-			if (wcsstr(procEntry.szExeFile, L".exe") && stristr(ProcessNameBuffer, g_SelectProcessFilter))
+			if (wcsstr(ProcEntry.szExeFile, L".exe") && stristr(ProcessNameBuffer, g_SelectProcessFilter))
 			{
 				ProcessInfo ProcInfo{};
 
-				PWCHAR ProcessName = procEntry.szExeFile;
+				PWCHAR ProcessName = ProcEntry.szExeFile;
 				ProcInfo.ProcessNameLimit = (BYTE)wcslen(ProcessName);
 
 				std::wstring ProcessFinalName = ProcessName;
 
 				ProcessFinalName.append(L" (PID: ");
-				ProcessFinalName.append(std::to_wstring(procEntry.th32ProcessID));
+				ProcessFinalName.append(std::to_wstring(ProcEntry.th32ProcessID));
 				ProcessFinalName.append(L")");
 
 				char ProcessFinalNameBuffer[MAX_PATH]{};
@@ -59,9 +61,9 @@ namespace GlobalOffsetDumper
 #endif
 
 				ProcInfo.ProcessName = ProcessFinalNameBuffer;
-				ProcInfo.ParentPID = procEntry.th32ParentProcessID;
-				ProcInfo.PID = procEntry.th32ProcessID;
-				ProcInfo.ThreadCount = procEntry.cntThreads;
+				ProcInfo.ParentPID = ProcEntry.th32ParentProcessID;
+				ProcInfo.PID = ProcEntry.th32ProcessID;
+				ProcInfo.ThreadCount = ProcEntry.cntThreads;
 
 				GetModInfo(&ProcInfo);
 
@@ -70,7 +72,7 @@ namespace GlobalOffsetDumper
 
 				g_Processes.push_back(ProcInfo);
 			}
-		} while (Process32Next(hSnapshot, &procEntry));
+		} while (Process32Next(hSnapshot, &ProcEntry));
 
 		std::sort(g_Processes.begin(), g_Processes.end(), [](const ProcessInfo& struct1, const ProcessInfo& struct2) {
 			return (struct1.PID < struct2.PID);
@@ -88,7 +90,7 @@ namespace GlobalOffsetDumper
 		ModEntry.dwSize = sizeof(MODULEENTRY32);
 
 		HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, ProcInfo->PID);
-		if (hSnapshot == INVALID_HANDLE_VALUE)
+		if (!IsHandleValid(hSnapshot))
 			return;
 
 		ProcInfo->ModInfos.clear();

@@ -42,7 +42,6 @@ namespace GlobalOffsetDumper
 	};
 
 	extern bool g_MmSelectProcess;
-
 	extern bool g_MmAbout;
 	extern bool g_MmExit;
 	extern bool g_MmDestroy;
@@ -51,6 +50,8 @@ namespace GlobalOffsetDumper
 	extern CHAR g_InputClassNameBuffer[MAX_PATH];
 	extern std::vector<DumpClassInfo> g_Classes;
 
+	bool IsHandleValid(HANDLE& handle);
+	void CreateGlodThread(LPTHREAD_START_ROUTINE lpThreadStart, LPVOID Parameter = NULL);
 	size_t GetSizeOfType(const DumpOffsetInfo* DumpOff);
 	bool LoadConfig();
 	bool SaveConfig();

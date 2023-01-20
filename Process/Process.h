@@ -16,7 +16,7 @@ namespace GlobalOffsetDumper
 	{
 		~ProcessInfo()
 		{
-			if (ProcHandle && ProcHandle != INVALID_HANDLE_VALUE)
+			if (this->ProcHandle && this->ProcHandle != INVALID_HANDLE_VALUE)
 				CloseHandle(ProcHandle);
 		}
 

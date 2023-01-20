@@ -87,8 +87,7 @@ namespace GlobalOffsetDumper
 				ModuleInfo& IdxModule = g_SelectedProcess.ModInfos.at(offset.SelectedModule);
 				PVOID Address = SigScanEx(g_SelectedProcess.ProcHandle, (PCHAR)IdxModule.BaseAddress, IdxModule.BaseSize, SigToActualSig(offset.Signature));
 				
-				SIZE_T ReadSize = 4;
-
+				SIZE_T ReadSize = sizeof(DWORD);
 				switch (offset.SelectedSize)
 				{
 				case BYTESIZE::BYTE:
@@ -106,19 +105,12 @@ namespace GlobalOffsetDumper
 					ReadSize = sizeof(DWORD);
 					break;
 				}
-				/*	case BYTESIZE::QWORD:
-				{
-					ReadSize = sizeof(DWORD) * 2;
-					break;
-				}*/
 				}
 				
 				ZeroMemory((PVOID)&offset.Offset, sizeof(offset.Offset));
 				ReadProcessMemory(g_SelectedProcess.ProcHandle, Address, (LPVOID)&offset.Offset, ReadSize, nullptr);
 			}
 		}
-
-		
 
 		DumpOffsetsHeader();
 	}

@@ -47,7 +47,6 @@ char* stristr(const char* str1, const char* str2)
 namespace GlobalOffsetDumper
 {
 	bool g_MmSelectProcess = false;
-
 	bool g_MmAbout = false;
 	bool g_MmExit = false;
 	bool g_MmDestroy = false;
@@ -55,6 +54,20 @@ namespace GlobalOffsetDumper
 	CHAR g_SelectProcessFilter[MAX_PATH]{};
 	CHAR g_InputClassNameBuffer[MAX_PATH]{};
 	std::vector<DumpClassInfo> g_Classes;
+
+	bool IsHandleValid(HANDLE& handle)
+	{
+		return (handle && handle != INVALID_HANDLE_VALUE);
+	}
+
+	void CreateGlodThread(LPTHREAD_START_ROUTINE lpThreadStart, LPVOID Parameter)
+	{
+		HANDLE ThreadHandle = CreateThread(NULL, NULL, lpThreadStart, Parameter, NULL, NULL);
+		if (IsHandleValid(ThreadHandle))
+			CloseHandle(ThreadHandle);
+		else
+			assert(FALSE);
+	}
 
 	size_t GetSizeOfType(const DumpOffsetInfo* pDumpOffset)
 	{
@@ -136,7 +149,7 @@ namespace GlobalOffsetDumper
 		if (GetOpenFileName(&ofn))
 		{
 			HANDLE FileHandle = CreateFile(ofn.lpstrFile, GENERIC_READ, 0, (LPSECURITY_ATTRIBUTES)NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, (HANDLE)NULL);
-			if (FileHandle == INVALID_HANDLE_VALUE)
+			if (!IsHandleValid(FileHandle))
 				return false;
 
 			DWORD FileSize = GetFileSize(FileHandle, NULL);
@@ -283,7 +296,7 @@ namespace GlobalOffsetDumper
 		if (GetSaveFileName(&ofn))
 		{
 			HANDLE FileHandle = CreateFile(ofn.lpstrFile, GENERIC_READ | GENERIC_WRITE, 0, (LPSECURITY_ATTRIBUTES)NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, (HANDLE)NULL);
-			if (FileHandle == INVALID_HANDLE_VALUE)
+			if (!IsHandleValid(FileHandle))
 				return false;
 
 			// BEST CONFIG SYSTEM EVER, MAY CHANGE IT TO JSON LATER ON
@@ -345,21 +358,21 @@ namespace GlobalOffsetDumper
 		if (GetSaveFileName(&ofn))
 		{
 			HANDLE FileHandle = CreateFile(ofn.lpstrFile, GENERIC_READ | GENERIC_WRITE, 0, (LPSECURITY_ATTRIBUTES)NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, (HANDLE)NULL);
-			if (FileHandle == INVALID_HANDLE_VALUE)
+			if (!IsHandleValid(FileHandle))
 				return false;
 
 			// BEST HEADER SYSTEM EVER
 			DWORD BytesWritten = 0;
-			for (int idx = 0; idx < g_Classes.size(); idx++)
+			for (int ClassIdx = 0; ClassIdx < g_Classes.size(); ClassIdx++)
 			{
-				auto& klass = g_Classes.at(idx);
+				auto& klass = g_Classes.at(ClassIdx);
 
 				std::sort(klass.Offsets.begin(), klass.Offsets.end(), [](const DumpOffsetInfo& off1, const DumpOffsetInfo& off2) -> bool {
 					return off1.Offset < off2.Offset;
 				});
 
 				std::string Buffer;
-				if (idx == 0)
+				if (ClassIdx == 0)
 					Buffer.append("// Created by Global Offset Dumper\n// https://github.com/paskalian/Global-Offset-Dumper\n\n\n");
 
 				Buffer.append("struct ");

@@ -9,13 +9,17 @@ void GlobalOffsetDumper::CloseAllMenus()
     g_MmExit = FALSE;
 }
 
+constexpr ULONG IMGUI_MAINAREA_STYLE    = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus;
+constexpr ULONG IMGUI_NORMAL_STYLE      = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
+constexpr ULONG IMGUI_INPUTTEXT_STYLE   = ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_CharsNoBlank | ImGuiInputTextFlags_EnterReturnsTrue;
+
 void GlobalOffsetDumper::Render()
 {
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->Pos, true, ImVec2(0, 0));
     ImGui::SetNextWindowSize(viewport->Size, true);
 
-    ImGui::Begin("Main Area", NULL, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::Begin("Main Area", NULL, IMGUI_MAINAREA_STYLE);
 
     if (ImGui::BeginMenuBar())
     {
@@ -27,18 +31,22 @@ void GlobalOffsetDumper::Render()
             {
                 if (g_SelectedProcess.PID)
                 {
-                    HANDLE ThreadHandle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)GlobalOffsetDumper::LoadConfig, NULL, NULL, NULL);
-                    if (ThreadHandle && ThreadHandle != INVALID_HANDLE_VALUE)
-                        CloseHandle(ThreadHandle);
+                    CreateGlodThread((LPTHREAD_START_ROUTINE)LoadConfig);
+                }
+                else
+                {
+                    MessageBoxA(*g_pMainWnd, "Select a process first", "Global Offset Dumper", MB_OK);
                 }
             }
             if (ImGui::MenuItem("Save Configuration"))
             {
                 if (g_SelectedProcess.PID)
                 {
-                    HANDLE ThreadHandle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)GlobalOffsetDumper::SaveConfig, NULL, NULL, NULL);
-                    if (ThreadHandle && ThreadHandle != INVALID_HANDLE_VALUE)
-                        CloseHandle(ThreadHandle);
+                    CreateGlodThread((LPTHREAD_START_ROUTINE)SaveConfig);
+                }
+                else
+                {
+                    MessageBoxA(*g_pMainWnd, "Select a process first", "Global Offset Dumper", MB_OK);
                 }
             }
             if (ImGui::MenuItem("About"))
@@ -56,16 +64,9 @@ void GlobalOffsetDumper::Render()
     ImGui::End();
 
     static bool OldMmSelectProcess = false;
-
     if (OldMmSelectProcess != g_MmSelectProcess && g_MmSelectProcess)
     {
-        
-        HANDLE ThreadHandle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)GetAllProcesses, NULL, NULL, NULL);
-        if (ThreadHandle && ThreadHandle != INVALID_HANDLE_VALUE)
-            CloseHandle(ThreadHandle);
-        
-
-        /*GetAllProcesses();*/
+        CreateGlodThread((LPTHREAD_START_ROUTINE)GetAllProcesses);
     }
     OldMmSelectProcess = g_MmSelectProcess;
     
@@ -85,11 +86,10 @@ void GlobalOffsetDumper::RenderSelectProcess()
     ImGui::Begin("Select Process", &g_MmSelectProcess, ImGuiWindowFlags_NoCollapse);
 
     ImGui::Text("PROCESSES\n");
-    if (ImGui::BeginListBox(" "))
+    if (ImGui::BeginListBox("##Processes"))
     {
-        for (unsigned int idx = 0; idx < g_Processes.size(); idx++)
+        for (auto& IdxProcess : g_Processes)
         {
-            ProcessInfo& IdxProcess = g_Processes[idx];
             if (!IdxProcess.ProcessName.empty())
             {
                 if (ImGui::Selectable(IdxProcess.ProcessName.c_str(), &IdxProcess.IsSelected))
@@ -103,24 +103,20 @@ void GlobalOffsetDumper::RenderSelectProcess()
     if (g_DummySelectProcess)
     {
         ImGui::SameLine();
-        ImGui::Text("%s\n\nBASE: 0x%X\nSIZE: 0x%X\nPARENT PID: %i\nPID: %i\nTHREADS: %i\n", g_DummySelectProcess->ProcessName.c_str(), g_DummySelectProcess->ModInfos.at(0).BaseAddress, g_DummySelectProcess->ModInfos.at(0).BaseSize, g_DummySelectProcess->ParentPID, g_DummySelectProcess->PID, g_DummySelectProcess->ThreadCount);
+        ImGui::Text("%s\n\nBase: 0x%X\nBase Size: 0x%X\nParent Pid: %i\nPid: %i\nThreads: %i\n", g_DummySelectProcess->ProcessName.c_str(), g_DummySelectProcess->ModInfos.at(0).BaseAddress, g_DummySelectProcess->ModInfos.at(0).BaseSize, g_DummySelectProcess->ParentPID, g_DummySelectProcess->PID, g_DummySelectProcess->ThreadCount);
     }
 
-    if (ImGui::InputText("Filter", g_SelectProcessFilter, MAX_PATH, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank, [](ImGuiInputTextCallbackData* data) -> int {
+    if (ImGui::InputText("Filter", g_SelectProcessFilter, MAX_PATH, IMGUI_INPUTTEXT_STYLE, [](ImGuiInputTextCallbackData* data) -> int {
         ImWchar c = data->EventChar;
-    return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_'));
-        }))
+        return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_'));
+    }))
     {
-        HANDLE ThreadHandle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)GetAllProcesses, NULL, NULL, NULL);
-        if (ThreadHandle && ThreadHandle != INVALID_HANDLE_VALUE)
-            CloseHandle(ThreadHandle);
+        CreateGlodThread((LPTHREAD_START_ROUTINE)GetAllProcesses);
     }
 
     if (ImGui::Button("Renew"))
     {
-        HANDLE ThreadHandle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)GetAllProcesses, NULL, NULL, NULL);
-        if (ThreadHandle && ThreadHandle != INVALID_HANDLE_VALUE)
-            CloseHandle(ThreadHandle);
+        CreateGlodThread((LPTHREAD_START_ROUTINE)GetAllProcesses);
     }
     ImGui::SameLine();
     if (ImGui::Button("Select"))
@@ -128,7 +124,7 @@ void GlobalOffsetDumper::RenderSelectProcess()
         if (g_DummySelectProcess)
         {
             // Cleanup for changing procedure
-            if (g_SelectedProcess.ProcHandle && g_SelectedProcess.ProcHandle != INVALID_HANDLE_VALUE)
+            if (IsHandleValid(g_SelectedProcess.ProcHandle))
                 CloseHandle(g_SelectedProcess.ProcHandle);
 
             // Memory cleanup & new init
@@ -140,9 +136,7 @@ void GlobalOffsetDumper::RenderSelectProcess()
 
             ClearAllProcesses();
 
-            HANDLE ThreadHandle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)GetHandle, (LPVOID)HANDLETYPE::OpenProcess, NULL, NULL);
-            if (ThreadHandle && ThreadHandle != INVALID_HANDLE_VALUE)
-                CloseHandle(ThreadHandle);
+            CreateGlodThread((LPTHREAD_START_ROUTINE)GetHandle, (LPVOID)HANDLETYPE::OpenProcess);
 
             g_MmSelectProcess = false;
         }
@@ -159,35 +153,34 @@ void GlobalOffsetDumper::RenderSelectProcess()
 
 void GlobalOffsetDumper::RenderAbout()
 {
-    ImGui::Begin("About", &g_MmAbout, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-    ImGui::Text("Global Offset Dumper 1.0\nCR 2023 | All Rights Reserved");
+    ImGui::Begin("About", &g_MmAbout, IMGUI_NORMAL_STYLE);
+    ImGui::Text("Global Offset Dumper 1.0\nhttps://github.com/paskalian/Global-Offset-Dumper");
     ImGui::End();
 }
 
 void GlobalOffsetDumper::RenderExit()
 {
-    ImGui::Begin("Sure?", &g_MmExit, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin("Sure?", &g_MmExit, IMGUI_NORMAL_STYLE);
     g_MmDestroy = ImGui::Button("YES I AM SURE");
     ImGui::End();
 }
 
 void GlobalOffsetDumper::RenderConfiguration()
 { 
-    float TextHeight = ImGui::GetTextLineHeight();
-
     ImGui::Text("Selected Process: %s (HANDLE: 0x%X) | Base Address: 0x%X", g_SelectedProcess.PID ? g_SelectedProcess.ProcessName.c_str() : "NULL", g_SelectedProcess.PID ? g_SelectedProcess.ProcHandle : 0, g_SelectedProcess.PID ? g_SelectedProcess.ModInfos.at(0).BaseAddress : 0);
-   
+    
+    float TextHeight = ImGui::GetTextLineHeight();
     if (g_SelectedProcess.PID)
     {
-        if (ImGui::InputText("Class Name", g_InputClassNameBuffer, MAX_PATH, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank, [](ImGuiInputTextCallbackData* data) -> int {
+        if (ImGui::InputText("Class Name", g_InputClassNameBuffer, MAX_PATH, IMGUI_INPUTTEXT_STYLE, [](ImGuiInputTextCallbackData* data) -> int {
             ImWchar c = data->EventChar;
             return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_'));
         }))
         {
             bool AlreadyThere = false;
-            for (auto gdclass : g_Classes)
+            for (auto IdxClass : g_Classes)
             {
-                if (strcmp(gdclass.ClassName.c_str(), g_InputClassNameBuffer) == 0)
+                if (strcmp(IdxClass.ClassName.c_str(), g_InputClassNameBuffer) == 0)
                 {
                     AlreadyThere = true;
                     break;
@@ -202,9 +195,9 @@ void GlobalOffsetDumper::RenderConfiguration()
             }
         }
     
-        for (SIZE_T idx = 0; idx < g_Classes.size(); idx++)
+        for (SIZE_T ClassIdx = 0; ClassIdx < g_Classes.size(); ClassIdx++)
         {
-            DumpClassInfo* IdxClass = &g_Classes.at(idx);
+            DumpClassInfo* IdxClass = &g_Classes.at(ClassIdx);
 
             if (ImGui::TreeNodeEx(IdxClass->ClassName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
             {
@@ -217,19 +210,19 @@ void GlobalOffsetDumper::RenderConfiguration()
                 if (ImGui::Button("Del"))
                 {
                     if (IdxClass->Offsets.size() == 0)
-                        g_Classes.erase(g_Classes.begin() + idx, g_Classes.begin() + idx + 1);
+                        g_Classes.erase(g_Classes.begin() + ClassIdx, g_Classes.begin() + ClassIdx + 1);
                     else
                         IdxClass->Offsets.erase(IdxClass->Offsets.end() - 1, IdxClass->Offsets.end());
                 }
 
-                for (SIZE_T idx2 = 0; idx2 < IdxClass->Offsets.size(); idx2++)
+                for (SIZE_T OffsetIdx = 0; OffsetIdx < IdxClass->Offsets.size(); OffsetIdx++)
                 {
-                    static const char* Sizes[] = { "BYTE", "WORD", "DWORD"/*, "QWORD"*/ };
+                    static const char* Sizes[] = { "BYTE", "WORD", "DWORD" };
 
-                    DumpOffsetInfo* IdxOffset = &IdxClass->Offsets.at(idx2);
+                    DumpOffsetInfo* IdxOffset = &IdxClass->Offsets.at(OffsetIdx);
 
                     std::string ModuleSearchName = "Module##";
-                    ModuleSearchName.append(std::to_string(idx2));
+                    ModuleSearchName.append(std::to_string(OffsetIdx));
 
                     ImGui::SetNextItemWidth(TextHeight * 6);
                     if (ImGui::BeginCombo(ModuleSearchName.c_str(), g_SelectedProcess.ModInfos.at(IdxOffset->SelectedModule).ModuleName.c_str()))
@@ -246,57 +239,55 @@ void GlobalOffsetDumper::RenderConfiguration()
                     ImGui::SameLine();
 
                     std::string OffsetSizeName = "Memory##";
-                    OffsetSizeName.append(std::to_string(idx2));
+                    OffsetSizeName.append(std::to_string(OffsetIdx));
 
                     ImGui::SetNextItemWidth(TextHeight * 6);
                     ImGui::Combo(OffsetSizeName.c_str(), (int*)&IdxOffset->SelectedSize, Sizes, ARRAYSIZE(Sizes));
                     ImGui::SameLine();
 
                     std::string OffsetTypeName = "##";
-                    OffsetTypeName.append(std::to_string(idx2));
+                    OffsetTypeName.append(std::to_string(OffsetIdx));
 
                     ImGui::SetNextItemWidth(TextHeight * 10);
-                    if (ImGui::InputText(OffsetTypeName.c_str(), IdxOffset->OffsetType, MAX_PATH, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank, [](ImGuiInputTextCallbackData* data) -> int {
+                    if (ImGui::InputText(OffsetTypeName.c_str(), IdxOffset->OffsetType, MAX_PATH, IMGUI_INPUTTEXT_STYLE, [](ImGuiInputTextCallbackData* data) -> int {
                         ImWchar c = data->EventChar;
-                    return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_') || (c == '*') || (c == '&'));
-                        }))
+                        return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_') || (c == '*') || (c == '&'));
+                    }))
                     {
                         std::string IdxOffsetType = std::to_string(GetSizeOfType(IdxOffset));
 
                         strcpy_s(IdxOffset->OffsetSize, MAX_PATH, IdxOffsetType.c_str());
                     }
-
                     ImGui::SameLine();
 
                     std::string OffsetTypeSizeName = "Type##";
-                    OffsetTypeSizeName.append(std::to_string(idx2));
+                    OffsetTypeSizeName.append(std::to_string(OffsetIdx));
 
                     ImGui::SetNextItemWidth(TextHeight * 2);
-                    ImGui::InputText(OffsetTypeSizeName.c_str(), IdxOffset->OffsetSize, MAX_PATH, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank, [](ImGuiInputTextCallbackData* data) -> int {
+                    ImGui::InputText(OffsetTypeSizeName.c_str(), IdxOffset->OffsetSize, MAX_PATH, IMGUI_INPUTTEXT_STYLE, [](ImGuiInputTextCallbackData* data) -> int {
                         ImWchar c = data->EventChar;
-                    return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_') || (c == '*') || (c == '&'));
-                        });
-                   
+                        return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_') || (c == '*') || (c == '&'));
+                    });
                     ImGui::SameLine();
 
                     std::string OffsetInpName = "Name##";
-                    OffsetInpName.append(std::to_string(idx2));
+                    OffsetInpName.append(std::to_string(OffsetIdx));
 
                     ImGui::SetNextItemWidth(TextHeight * 10);
-                    ImGui::InputText(OffsetInpName.c_str(), IdxOffset->OffsetName, MAX_PATH, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsNoBlank, [](ImGuiInputTextCallbackData* data) -> int {
+                    ImGui::InputText(OffsetInpName.c_str(), IdxOffset->OffsetName, MAX_PATH, IMGUI_INPUTTEXT_STYLE, [](ImGuiInputTextCallbackData* data) -> int {
                         ImWchar c = data->EventChar;
-                    return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_') || (c == '[') || (c == ']'));
-                        });
+                        return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_') || (c == '[') || (c == ']'));
+                    });
                     ImGui::SameLine();
 
                     std::string SignatureInpName = "Signature##";
-                    SignatureInpName.append(std::to_string(idx2));
+                    SignatureInpName.append(std::to_string(OffsetIdx));
 
                     ImGui::SetNextItemWidth(TextHeight * 10);
                     ImGui::InputText(SignatureInpName.c_str(), IdxOffset->Signature, MAX_PATH, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_CharsUppercase, [](ImGuiInputTextCallbackData* data) -> int {
                         ImWchar c = data->EventChar;
-                    return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f') || (c == ' ') || (c == '?'));
-                        });
+                        return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f') || (c == ' ') || (c == '?'));
+                    });
                     ImGui::SameLine();
 
                     ImGui::Text("OFFSET: 0x%X", IdxOffset->Offset);
@@ -308,9 +299,14 @@ void GlobalOffsetDumper::RenderConfiguration()
 
     if (ImGui::Button("D U M P", ImVec2(ImGui::GetWindowWidth(), TextHeight * 3)))
     {
-        HANDLE ThreadHandle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)DumpOffsets, NULL, NULL, NULL);
-        if (ThreadHandle && ThreadHandle != INVALID_HANDLE_VALUE)
-            CloseHandle(ThreadHandle);
+        if (g_SelectedProcess.PID)
+        {
+            CreateGlodThread((LPTHREAD_START_ROUTINE)DumpOffsets);
+        }
+        else
+        {
+            MessageBoxA(*g_pMainWnd, "Select a process first", "Global Offset Dumper", MB_OK);
+        }
     }
     
     std::string FpsText = std::to_string((int)floor(ImGui::GetIO().Framerate));
