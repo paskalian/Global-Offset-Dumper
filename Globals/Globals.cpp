@@ -105,6 +105,10 @@ namespace GlobalOffsetDumper
 		{
 			Size = sizeof(char);
 		}
+		else if (stristr(TypeC, "bool"))
+		{
+			Size = sizeof(bool);
+		}
 
 
 		if (char* arbeg = stristr(pDumpOffset->OffsetName, "["))
