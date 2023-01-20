@@ -362,6 +362,11 @@ namespace GlobalOffsetDumper
 				if (idx == 0)
 					Buffer.append("// Created by Global Offset Dumper\n// https://github.com/paskalian/Global-Offset-Dumper\n\n\n");
 
+				Buffer.append("struct ");
+				Buffer.append(klass.ClassName);
+				Buffer.append("\n{\n");
+
+				size_t PadIdx = 0;
 				for (size_t OffsetIdx = 0; OffsetIdx < klass.Offsets.size(); OffsetIdx++)
 				{
 					const auto& offset = klass.Offsets.at(OffsetIdx);
@@ -376,19 +381,6 @@ namespace GlobalOffsetDumper
 						}
 						continue;
 					}
-				}
-
-				Buffer.append("struct ");
-				Buffer.append(klass.ClassName);
-				Buffer.append("\n{\n");
-
-				size_t PadIdx = 0;
-				for (size_t OffsetIdx = 0; OffsetIdx < klass.Offsets.size(); OffsetIdx++)
-				{
-					const auto& offset = klass.Offsets.at(OffsetIdx);
-
-					if (!offset.Offset)
-						continue;
 
 					uintptr_t Offset = offset.Offset;
 					if (OffsetIdx != 0)
