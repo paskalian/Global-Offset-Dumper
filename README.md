@@ -40,6 +40,21 @@ Please read the explanation carefully before using the Global Offset Dumper.
 
 After all your configuration is done and you have dumped it, you are ready to go.
 
-<img src="p2_gh.png"></img>
+```cpp
+// Created by Global Offset Dumper
+// https://github.com/paskalian/Global-Offset-Dumper
 
-<hr>
+
+struct TestClass1
+{
+char pad0[128];
+int TestMember[2];
+int TestMember2;
+};
+
+struct TestClass2
+{
+char pad0[152];
+short* TestMember;
+}
+```
