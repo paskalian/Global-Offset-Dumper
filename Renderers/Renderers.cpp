@@ -274,10 +274,15 @@ void GlobalOffsetDumper::RenderConfiguration()
                     OffsetInpName.append(std::to_string(OffsetIdx));
 
                     ImGui::SetNextItemWidth(TextHeight * 10);
-                    ImGui::InputText(OffsetInpName.c_str(), IdxOffset->OffsetName, MAX_PATH, IMGUI_INPUTTEXT_STYLE, [](ImGuiInputTextCallbackData* data) -> int {
+                    if (ImGui::InputText(OffsetInpName.c_str(), IdxOffset->OffsetName, MAX_PATH, IMGUI_INPUTTEXT_STYLE, [](ImGuiInputTextCallbackData* data) -> int {
                         ImWchar c = data->EventChar;
                         return !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_') || (c == '[') || (c == ']'));
-                    });
+                    }))
+                    {
+                        std::string IdxOffsetType = std::to_string(GetSizeOfType(IdxOffset));
+
+                        strcpy_s(IdxOffset->OffsetSize, MAX_PATH, IdxOffsetType.c_str());
+                    }
                     ImGui::SameLine();
 
                     std::string SignatureInpName = "Signature##";
@@ -301,7 +306,32 @@ void GlobalOffsetDumper::RenderConfiguration()
     {
         if (g_SelectedProcess.PID)
         {
-            CreateGlodThread((LPTHREAD_START_ROUTINE)DumpOffsets);
+            bool ClassProblem = g_Classes.empty();
+            if (!ClassProblem)
+            {
+                for (auto& klass : g_Classes)
+                {
+                    ClassProblem = klass.Offsets.empty();
+                    if (!ClassProblem)
+                    {
+                        for (auto& offset : klass.Offsets)
+                        {
+                            ClassProblem = offset.IsUnstable();
+
+                            if (ClassProblem)
+                                break;
+                        }
+                    }
+
+                    if (ClassProblem)
+                        break;
+                }
+            }
+
+            if (ClassProblem)
+                MessageBoxA(*g_pMainWnd, "Setup the classes properly", "Global Offset Dumper", MB_OK);
+            else
+                CreateGlodThread((LPTHREAD_START_ROUTINE)DumpOffsets);
         }
         else
         {

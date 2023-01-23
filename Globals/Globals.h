@@ -27,6 +27,11 @@ namespace GlobalOffsetDumper
 
 	struct DumpOffsetInfo
 	{
+		bool IsUnstable()
+		{
+			return (OffsetType[0] == '\0') || (OffsetSize[0] == '\0') || (OffsetName[0] == '\0') || (Signature[0] == '\0');
+		}
+
 		UINT SelectedModule = 0;
 		BYTESIZE SelectedSize = BYTESIZE::BYTE;
 		CHAR OffsetType[MAX_PATH]{};
