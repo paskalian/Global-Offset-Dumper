@@ -10,8 +10,10 @@
 #include "..\Process\Process.h"
 #include "..\Renderers\Renderers.h"
 
-extern HWND* g_pMainWnd;
+typedef NTSTATUS(__cdecl* tRtlAdjustPrivilege)(ULONG Privilege, BOOLEAN Enable, BOOLEAN CurrentThread, PBOOLEAN Enabled);
 
+extern tRtlAdjustPrivilege RtlAdjustPrivilege;
+extern HWND* g_pMainWnd;
 char* stristr(const char* str1, const char* str2);
 
 namespace GlobalOffsetDumper

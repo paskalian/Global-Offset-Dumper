@@ -37,6 +37,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance,_In_opt_ HINSTANCE hPrevInstance,_I
     HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Global Offset Dumper", WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
     g_pMainWnd = &hwnd;
 
+    HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
+    assert(hNtdll);
+    RtlAdjustPrivilege = (tRtlAdjustPrivilege)GetProcAddress(hNtdll, "RtlAdjustPrivilege");
+
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
     {
@@ -164,7 +168,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance,_In_opt_ HINSTANCE hPrevInstance,_I
                 done = true;
         }
         if (done)
+        {
+            GlobalOffsetDumper::ClearAllProcesses();
             break;
+        }
 
         // Start the Dear ImGui frame
         ImGui_ImplDX9_NewFrame();

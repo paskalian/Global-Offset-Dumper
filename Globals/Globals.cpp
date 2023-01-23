@@ -1,7 +1,8 @@
 #include "Globals.h"
 
-HWND* g_pMainWnd;
 
+tRtlAdjustPrivilege RtlAdjustPrivilege;
+HWND* g_pMainWnd;
 char* stristr(const char* str1, const char* str2)
 {
 	const char* p1 = str1;

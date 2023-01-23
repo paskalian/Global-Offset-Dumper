@@ -19,6 +19,10 @@ namespace GlobalOffsetDumper
 	{
 		ClearAllProcesses();
 
+		BOOLEAN PreviousPriv = FALSE;
+		if (RtlAdjustPrivilege(20 /*SeDebugPrivilege*/, TRUE, FALSE, &PreviousPriv) < 0)
+			MessageBoxA(*g_pMainWnd, "Privileges couldn't be adjusted", "Global Offset Dumper", MB_OK);
+
 		PROCESSENTRY32 ProcEntry;
 		ZeroMemory(&ProcEntry, sizeof(PROCESSENTRY32));
 
@@ -80,6 +84,8 @@ namespace GlobalOffsetDumper
 		);
 		
 		CloseHandle(hSnapshot);
+
+		RtlAdjustPrivilege(20 /*SeDebugPrivilege*/, PreviousPriv, FALSE, &PreviousPriv);
 	}
 
 	VOID GetModInfo(ProcessInfo* ProcInfo)
