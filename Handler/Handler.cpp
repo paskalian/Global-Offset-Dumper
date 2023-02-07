@@ -49,11 +49,13 @@ namespace GlobalOffsetDumper
 
 		while (Size)
 		{
-			assert(ReadProcessMemory(ProcessHandle, StartAddress + TotalReadBytes, &Data, PAGE_SIZE, &ReadBytes));
+			if (!ReadProcessMemory(ProcessHandle, StartAddress + TotalReadBytes, &Data, PAGE_SIZE, &ReadBytes))
+				return nullptr;
 
 			Size = Size >= ReadBytes ? Size - ReadBytes : 0;
 
-			assert(ReadBytes == PAGE_SIZE);
+			if (ReadBytes != PAGE_SIZE)
+				MessageBoxA(*g_pMainWnd, "SigScan bytes aren't equal", "Global Offset Dumper", MB_OK);
 
 			bool Found = TRUE;
 			for (unsigned int i1 = 0; i1 < PAGE_SIZE; i1++)
@@ -85,6 +87,7 @@ namespace GlobalOffsetDumper
 			for (const auto& offset : klass.Offsets)
 			{
 				ModuleInfo& IdxModule = g_SelectedProcess.ModInfos.at(offset.SelectedModule);
+
 				PVOID Address = SigScanEx(g_SelectedProcess.ProcHandle, (PCHAR)IdxModule.BaseAddress, IdxModule.BaseSize, SigToActualSig(offset.Signature));
 				
 				SIZE_T ReadSize = sizeof(DWORD);

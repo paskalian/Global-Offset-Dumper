@@ -1,7 +1,3 @@
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-
 #include "ImGui\imgui.h"
 #include "ImGui\imgui_impl_dx9.h"
 #include "ImGui\imgui_impl_win32.h"
@@ -38,7 +34,11 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance,_In_opt_ HINSTANCE hPrevInstance,_I
     g_pMainWnd = &hwnd;
 
     HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
-    assert(hNtdll);
+    if (!hNtdll)
+    {
+        MessageBoxA(*g_pMainWnd, "ntdll.dll module not found", "Global Offset Dumper", MB_OK);
+        exit(-1);
+    }
     RtlAdjustPrivilege = (tRtlAdjustPrivilege)GetProcAddress(hNtdll, "RtlAdjustPrivilege");
 
     // Initialize Direct3D
@@ -218,8 +218,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance,_In_opt_ HINSTANCE hPrevInstance,_I
     CleanupDeviceD3D();
     ::DestroyWindow(hwnd);
     ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
-
-    _CrtDumpMemoryLeaks();
 
     return 0;
 }

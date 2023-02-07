@@ -1,8 +1,8 @@
 #include "Globals.h"
 
 
-tRtlAdjustPrivilege RtlAdjustPrivilege;
-HWND* g_pMainWnd;
+tRtlAdjustPrivilege RtlAdjustPrivilege = nullptr;
+HWND* g_pMainWnd = nullptr;
 char* stristr(const char* str1, const char* str2)
 {
 	const char* p1 = str1;
@@ -67,7 +67,10 @@ namespace GlobalOffsetDumper
 		if (IsHandleValid(ThreadHandle))
 			CloseHandle(ThreadHandle);
 		else
-			assert(FALSE);
+		{
+			MessageBoxA(*g_pMainWnd, "CreateGlodThread error", "Global Offset Dumper", MB_OK);
+			exit(-1);
+		}
 	}
 
 	size_t GetSizeOfType(const DumpOffsetInfo* pDumpOffset)
@@ -229,7 +232,7 @@ namespace GlobalOffsetDumper
 							{
 								DumpOffset.SelectedModule = atoi(Item.c_str());
 								ItemNumber++;
-								break;
+break;
 							}
 							case 2:
 							{
@@ -328,7 +331,11 @@ namespace GlobalOffsetDumper
 					Buffer.append("# ");
 				}
 				Buffer.append("\n");
-				assert(WriteFile(FileHandle, Buffer.c_str(), (DWORD)Buffer.size(), &BytesWritten, NULL));
+				if (!WriteFile(FileHandle, Buffer.c_str(), (DWORD)Buffer.size(), &BytesWritten, NULL))
+				{
+					MessageBoxA(*g_pMainWnd, "WriteFile error", "Global Offset Dumper", MB_OK);
+					exit(-1);
+				}
 			}
 
 			CloseHandle(FileHandle);
@@ -374,7 +381,7 @@ namespace GlobalOffsetDumper
 
 				std::sort(klass.Offsets.begin(), klass.Offsets.end(), [](const DumpOffsetInfo& off1, const DumpOffsetInfo& off2) -> bool {
 					return off1.Offset < off2.Offset;
-				});
+					});
 
 				std::string Buffer;
 				if (ClassIdx == 0)
@@ -421,7 +428,11 @@ namespace GlobalOffsetDumper
 				}
 
 				Buffer.append("};\n\n");
-				assert(WriteFile(FileHandle, Buffer.c_str(), (DWORD)Buffer.size(), &BytesWritten, NULL));
+				if (!WriteFile(FileHandle, Buffer.c_str(), (DWORD)Buffer.size(), &BytesWritten, NULL))
+				{
+					MessageBoxA(*g_pMainWnd, "WriteFile error", "Global Offset Dumper", MB_OK);
+					exit(-1);
+				}
 			}
 
 			CloseHandle(FileHandle);
