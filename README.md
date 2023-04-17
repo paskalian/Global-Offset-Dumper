@@ -3,10 +3,6 @@
 <p align="center">Universal dumping tool for all kinds of processes</p>
 
 <p align="center"><img src="p1_gh.gif" alt="animated"></img></p>
-
-<hr>
-<p align="center"><a href="https://discord.gg/9qe38utdBJ" target="blank"><img align="center" src="https://raw.githubusercontent.com/rahuldkjain/github-profile-readme-generator/master/src/images/icons/Social/discord.svg" alt="9qe38utdBJ" height="30" width="40" /></a>Discord</p>
-<hr>
   
 ## Usage
 
